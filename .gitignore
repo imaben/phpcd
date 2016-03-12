@@ -30,3 +30,7 @@
 
 # Debug files
 *.dSYM/
+
+# Other files
+tags
+phpcd
