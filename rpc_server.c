@@ -27,6 +27,52 @@ ZEND_METHOD(RpcServer, onMessage)
     }
 }
 
+ZEND_METHOD(RpcServer, onRequest)
+{
+
+#define MOVE_HASH_WITH_CHECK(ht) \
+    if (FAILURE == zend_hash_move_forward(ht)) { \
+        RETURN_FALSE; \
+    }
+
+    zval *messages = NULL;
+    zval *type, *msg_id, *method, *params;
+    HashTable *ht;
+    zval *result, *error;
+    if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_THROW, ZEND_NUM_ARGS(), 'a', &messages) == FAILURE) {
+        RETURN_FALSE;
+    }
+    ht = Z_ARRVAL_P(messages);
+    type = zend_hash_get_current_data(ht);
+
+    MOVE_HASH_WITH_CHECK(ht);
+    msg_id = zend_hash_get_current_data(ht);
+
+    MOVE_HASH_WITH_CHECK(ht);
+    method = zend_hash_get_current_data(ht);
+
+    MOVE_HASH_WITH_CHECK(ht);
+    params = zend_hash_get_current_data(ht);
+
+    zend_update_property(Z_OBJCE_P(getThis()), getThis(), "msg_id", strlen("msg_id") -1, msg_id);
+
+    zend_bool method_exists;
+    method_exists = zend_hash_exists(&Z_OBJCE_P(getThis())->function_table, Z_STR_P(method));
+    if (method_exists) {
+        // call this->doRequest
+    } else {
+        ZVAL_NEW_STR(error, "method not exists");
+    }
+}
+
+ZEND_METHOD(RpcServer, onResponse)
+{
+}
+
+ZEND_METHOD(RpcServer, onNotification)
+{
+}
+
 #define REGISTER_RPC_SERVER_CLASS_CONST_LONG(const_name, value) \
     zend_declare_class_constant_long(phpcd_rpc_server_ce, const_name, sizeof(const_name)-1, (zend_long)value);
 
@@ -34,8 +80,23 @@ ZEND_BEGIN_ARG_INFO(arginfo_rpc_server_onMessage, 0)
     ZEND_ARG_ARRAY_INFO(0, "messages", 0)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(arginfo_rpc_server_onRequest, 0)
+    ZEND_ARG_ARRAY_INFO(0, "messages", 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_rpc_server_onResponse, 0)
+    ZEND_ARG_ARRAY_INFO(0, "messages", 0)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(arginfo_rpc_server_onNotification, 0)
+    ZEND_ARG_ARRAY_INFO(0, "messages", 0)
+ZEND_END_ARG_INFO()
+
 static const zend_function_entry rpc_server_functions[] = {
     ZEND_ME(RpcServer, onMessage, arginfo_rpc_server_onMessage, ZEND_ACC_PUBLIC)
+    ZEND_ME(RpcServer, onRequest, arginfo_rpc_server_onRequest, ZEND_ACC_PUBLIC)
+    ZEND_ME(RpcServer, onResponse, arginfo_rpc_server_onResponse, ZEND_ACC_PUBLIC)
+    ZEND_ME(RpcServer, onNotification, arginfo_rpc_server_onNotification, ZEND_ACC_PUBLIC)
     PHP_FE_END
 };
 
